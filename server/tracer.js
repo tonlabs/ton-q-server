@@ -187,7 +187,16 @@ export class QTracer {
     }): ?JaegerConfig {
         const endpoint = config.endpoint;
         if (!endpoint) {
-            return null;
+            return {
+                serviceName: config.service,
+                sampler: {
+                    type: 'const',
+                    param: 1,
+                },
+                reporter: {
+                    logSpans: true,
+                }
+            }
         }
         const parts = parseUrl(endpoint);
         return (parts.protocol === '')
