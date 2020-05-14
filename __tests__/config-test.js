@@ -5,7 +5,16 @@ test("Jaeger Config", () => {
         endpoint: '',
         service: '',
         tags: [],
-    })).toBeNull();
+    })).toEqual({
+        serviceName: 'service',
+        sampler: {
+            type: 'const',
+            param: 1,
+        },
+        reporter: {
+            logSpans: true,
+        },
+    });
 
     expect(QTracer.getJaegerConfig({
         endpoint: 'http://collector:1234',
