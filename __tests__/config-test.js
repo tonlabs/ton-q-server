@@ -6,7 +6,7 @@ test("Jaeger Config", () => {
         service: '',
         tags: [],
     })).toEqual({
-        serviceName: 'service',
+        serviceName: '',
         sampler: {
             type: 'const',
             param: 1,
