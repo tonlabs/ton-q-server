@@ -1,6 +1,5 @@
 // @flow
 
-import fs from "fs";
 import { Kafka, Producer } from "kafkajs";
 import { Span, FORMAT_TEXT_MAP } from 'opentracing';
 import type { TONContracts } from "ton-client-js/types";
@@ -11,10 +10,15 @@ import type {
 } from "./arango-collection";
 import { Auth } from "./auth";
 import { ensureProtocol } from "./config";
-import path from 'path';
 import fetch from 'node-fetch';
 import type { AccessKey, AccessRights } from "./auth";
 import { QTracer } from "./tracer";
+import { QError } from "./utils";
+
+import fs from 'fs'
+import path from 'path'
+
+const {version} = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
 
 function isObject(test: any): boolean {
     return typeof test === 'object' && test !== null;
@@ -37,6 +41,7 @@ type Info = {
 type Request = {
     id: string,
     body: string,
+    expireAt: number,
 }
 
 export type GraphQLRequestContextEx = GraphQLRequestContext & {
@@ -46,9 +51,9 @@ export type GraphQLRequestContextEx = GraphQLRequestContext & {
 //------------------------------------------------------------- Query
 
 function info(): Info {
-    const pkg = JSON.parse((fs.readFileSync(path.resolve(__dirname, '..', '..', 'package.json')): any));
     return {
-        version: pkg.version,
+        version,
+        time: Date.now(),
     };
 }
 
@@ -152,6 +157,7 @@ async function postRequestsUsingKafka(requests: Request[], context: GraphQLReque
         return newProducer;
 
     });
+
     const messages = requests.map((request) => {
         const traceInfo = {};
         context.db.tracer.inject(span, FORMAT_TEXT_MAP, traceInfo);
@@ -205,6 +211,12 @@ async function postRequests(
         span.setTag('params', requests);
         const accessRights = await requireGrantedAccess(context, args);
         await checkPostRestrictions(context.client.contracts, requests, accessRights);
+
+        const expired: ?Request = requests.find(x => x.expireAt && (Date.now() > x.expireAt));
+        if (expired) {
+            throw QError.messageExpired(expired.id, expired.expireAt);
+        }
+
         try {
             if (context.config.requests.mode === 'rest') {
                 await postRequestsUsingRest(requests, context, span);

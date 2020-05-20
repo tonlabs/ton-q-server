@@ -1,16 +1,26 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.26.3 – May 7, 2020
+### New
+- Fields `Block.key_field` and `Block.boc`. 
+- Field `expireAt` in post requests.
+- Field `time` in `info` query.
+- `src_transaction` will wait only when `messages.created_lt` !== 0 (because there is no transaction for such messages).
+
+### Fixed
+- master config `p20`, `p21`, `p18` fields types
+
+## 0.26.2 – May 6, 2020
+### Fixed
+- master config p17 field sizes
+
 ## 0.26.1 – May 4, 2020
 ### Fixed
 - Aggregates on nested array fields failed with `value.substr is not function`.
 - Slow detector for `MIN` `MAX` aggregates must use a specified field as `order by` to detect fast query. 
 - Indexes reloaded from db first time on demand and then every 1 hour. 
 - Config p17 stake types.
-
-## 0.26.2 – May 6, 2020
-### Fixed
-- master config p17 field sizes
 
 ## 0.26.0 – May 2, 2020
 ### New

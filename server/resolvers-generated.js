@@ -203,8 +203,8 @@ const BlockMasterConfigP12 = struct({
 });
 
 const BlockMasterConfigP14 = struct({
-    masterchain_block_fee: scalar,
-    basechain_block_fee: scalar,
+    masterchain_block_fee: bigUInt2,
+    basechain_block_fee: bigUInt2,
 });
 
 const BlockMasterConfigP15 = struct({
@@ -229,22 +229,22 @@ const BlockMasterConfigP17 = struct({
 
 const BlockMasterConfigP18 = struct({
     utime_since: scalar,
-    bit_price_ps: scalar,
-    cell_price_ps: scalar,
-    mc_bit_price_ps: scalar,
-    mc_cell_price_ps: scalar,
+    bit_price_ps: bigUInt1,
+    cell_price_ps: bigUInt1,
+    mc_bit_price_ps: bigUInt1,
+    mc_cell_price_ps: bigUInt1,
 });
 
 const GasLimitsPrices = struct({
-    gas_price: scalar,
-    gas_limit: scalar,
-    special_gas_limit: scalar,
-    gas_credit: scalar,
-    block_gas_limit: scalar,
-    freeze_due_limit: scalar,
-    delete_due_limit: scalar,
-    flat_gas_limit: scalar,
-    flat_gas_price: scalar,
+    gas_price: bigUInt1,
+    gas_limit: bigUInt1,
+    special_gas_limit: bigUInt1,
+    gas_credit: bigUInt1,
+    block_gas_limit: bigUInt1,
+    freeze_due_limit: bigUInt1,
+    delete_due_limit: bigUInt1,
+    flat_gas_limit: bigUInt1,
+    flat_gas_price: bigUInt1,
 });
 
 const BlockLimitsBytes = struct({
@@ -272,9 +272,9 @@ const BlockLimits = struct({
 });
 
 const MsgForwardPrices = struct({
-    lump_price: scalar,
-    bit_price: scalar,
-    cell_price: scalar,
+    lump_price: bigUInt1,
+    bit_price: bigUInt1,
+    cell_price: bigUInt1,
     ihr_price_factor: scalar,
     first_frac: scalar,
     next_frac: scalar,
@@ -442,6 +442,8 @@ const Block = struct({
     tr_count: scalar,
     state_update: BlockStateUpdate,
     master: BlockMaster,
+    key_block: scalar,
+    boc: scalar,
     signatures: join('id', 'id', 'blocks_signatures', () => BlockSignatures),
 }, true);
 
@@ -718,6 +720,14 @@ function createResolvers(db) {
                 return resolveBigUInt(2, parent.create, args);
             },
         },
+        BlockMasterConfigP14: {
+            masterchain_block_fee(parent, args) {
+                return resolveBigUInt(2, parent.masterchain_block_fee, args);
+            },
+            basechain_block_fee(parent, args) {
+                return resolveBigUInt(2, parent.basechain_block_fee, args);
+            },
+        },
         BlockMasterConfigP17: {
             min_stake(parent, args) {
                 return resolveBigUInt(2, parent.min_stake, args);
@@ -727,6 +737,63 @@ function createResolvers(db) {
             },
             min_total_stake(parent, args) {
                 return resolveBigUInt(2, parent.min_total_stake, args);
+            },
+        },
+        BlockMasterConfigP18: {
+            bit_price_ps(parent, args) {
+                return resolveBigUInt(1, parent.bit_price_ps, args);
+            },
+            cell_price_ps(parent, args) {
+                return resolveBigUInt(1, parent.cell_price_ps, args);
+            },
+            mc_bit_price_ps(parent, args) {
+                return resolveBigUInt(1, parent.mc_bit_price_ps, args);
+            },
+            mc_cell_price_ps(parent, args) {
+                return resolveBigUInt(1, parent.mc_cell_price_ps, args);
+            },
+            utime_since_string(parent, args) {
+                return resolveUnixTimeString(parent.utime_since);
+            },
+        },
+        GasLimitsPrices: {
+            gas_price(parent, args) {
+                return resolveBigUInt(1, parent.gas_price, args);
+            },
+            gas_limit(parent, args) {
+                return resolveBigUInt(1, parent.gas_limit, args);
+            },
+            special_gas_limit(parent, args) {
+                return resolveBigUInt(1, parent.special_gas_limit, args);
+            },
+            gas_credit(parent, args) {
+                return resolveBigUInt(1, parent.gas_credit, args);
+            },
+            block_gas_limit(parent, args) {
+                return resolveBigUInt(1, parent.block_gas_limit, args);
+            },
+            freeze_due_limit(parent, args) {
+                return resolveBigUInt(1, parent.freeze_due_limit, args);
+            },
+            delete_due_limit(parent, args) {
+                return resolveBigUInt(1, parent.delete_due_limit, args);
+            },
+            flat_gas_limit(parent, args) {
+                return resolveBigUInt(1, parent.flat_gas_limit, args);
+            },
+            flat_gas_price(parent, args) {
+                return resolveBigUInt(1, parent.flat_gas_price, args);
+            },
+        },
+        MsgForwardPrices: {
+            lump_price(parent, args) {
+                return resolveBigUInt(1, parent.lump_price, args);
+            },
+            bit_price(parent, args) {
+                return resolveBigUInt(1, parent.bit_price, args);
+            },
+            cell_price(parent, args) {
+                return resolveBigUInt(1, parent.cell_price, args);
             },
         },
         ValidatorSetList: {
@@ -863,7 +930,7 @@ function createResolvers(db) {
                 return context.db.blocks.waitForDoc(parent.block_id, '_key', args);
             },
             src_transaction(parent, args, context) {
-                return parent.msg_type !== 1 ? context.db.transactions.waitForDoc(parent._key, 'out_msgs[*]', args) : null;
+                return parent.created_lt !== '00' && parent.msg_type !== 1 ? context.db.transactions.waitForDoc(parent._key, 'out_msgs[*]', args) : null;
             },
             dst_transaction(parent, args, context) {
                 return parent.msg_type !== 2 ? context.db.transactions.waitForDoc(parent._key, 'in_msg', args) : null;
@@ -1173,8 +1240,8 @@ scalarFields.set('blocks.master.config.p12.min_addr_len', { type: 'number', path
 scalarFields.set('blocks.master.config.p12.max_addr_len', { type: 'number', path: 'doc.master.config.p12[*].max_addr_len' });
 scalarFields.set('blocks.master.config.p12.addr_len_step', { type: 'number', path: 'doc.master.config.p12[*].addr_len_step' });
 scalarFields.set('blocks.master.config.p12.workchain_type_id', { type: 'number', path: 'doc.master.config.p12[*].workchain_type_id' });
-scalarFields.set('blocks.master.config.p14.masterchain_block_fee', { type: 'string', path: 'doc.master.config.p14.masterchain_block_fee' });
-scalarFields.set('blocks.master.config.p14.basechain_block_fee', { type: 'string', path: 'doc.master.config.p14.basechain_block_fee' });
+scalarFields.set('blocks.master.config.p14.masterchain_block_fee', { type: 'uint1024', path: 'doc.master.config.p14.masterchain_block_fee' });
+scalarFields.set('blocks.master.config.p14.basechain_block_fee', { type: 'uint1024', path: 'doc.master.config.p14.basechain_block_fee' });
 scalarFields.set('blocks.master.config.p15.validators_elected_for', { type: 'number', path: 'doc.master.config.p15.validators_elected_for' });
 scalarFields.set('blocks.master.config.p15.elections_start_before', { type: 'number', path: 'doc.master.config.p15.elections_start_before' });
 scalarFields.set('blocks.master.config.p15.elections_end_before', { type: 'number', path: 'doc.master.config.p15.elections_end_before' });
@@ -1187,28 +1254,28 @@ scalarFields.set('blocks.master.config.p17.max_stake', { type: 'uint1024', path:
 scalarFields.set('blocks.master.config.p17.min_total_stake', { type: 'uint1024', path: 'doc.master.config.p17.min_total_stake' });
 scalarFields.set('blocks.master.config.p17.max_stake_factor', { type: 'number', path: 'doc.master.config.p17.max_stake_factor' });
 scalarFields.set('blocks.master.config.p18.utime_since', { type: 'number', path: 'doc.master.config.p18[*].utime_since' });
-scalarFields.set('blocks.master.config.p18.bit_price_ps', { type: 'string', path: 'doc.master.config.p18[*].bit_price_ps' });
-scalarFields.set('blocks.master.config.p18.cell_price_ps', { type: 'string', path: 'doc.master.config.p18[*].cell_price_ps' });
-scalarFields.set('blocks.master.config.p18.mc_bit_price_ps', { type: 'string', path: 'doc.master.config.p18[*].mc_bit_price_ps' });
-scalarFields.set('blocks.master.config.p18.mc_cell_price_ps', { type: 'string', path: 'doc.master.config.p18[*].mc_cell_price_ps' });
-scalarFields.set('blocks.master.config.p20.gas_price', { type: 'string', path: 'doc.master.config.p20.gas_price' });
-scalarFields.set('blocks.master.config.p20.gas_limit', { type: 'string', path: 'doc.master.config.p20.gas_limit' });
-scalarFields.set('blocks.master.config.p20.special_gas_limit', { type: 'string', path: 'doc.master.config.p20.special_gas_limit' });
-scalarFields.set('blocks.master.config.p20.gas_credit', { type: 'string', path: 'doc.master.config.p20.gas_credit' });
-scalarFields.set('blocks.master.config.p20.block_gas_limit', { type: 'string', path: 'doc.master.config.p20.block_gas_limit' });
-scalarFields.set('blocks.master.config.p20.freeze_due_limit', { type: 'string', path: 'doc.master.config.p20.freeze_due_limit' });
-scalarFields.set('blocks.master.config.p20.delete_due_limit', { type: 'string', path: 'doc.master.config.p20.delete_due_limit' });
-scalarFields.set('blocks.master.config.p20.flat_gas_limit', { type: 'string', path: 'doc.master.config.p20.flat_gas_limit' });
-scalarFields.set('blocks.master.config.p20.flat_gas_price', { type: 'string', path: 'doc.master.config.p20.flat_gas_price' });
-scalarFields.set('blocks.master.config.p21.gas_price', { type: 'string', path: 'doc.master.config.p21.gas_price' });
-scalarFields.set('blocks.master.config.p21.gas_limit', { type: 'string', path: 'doc.master.config.p21.gas_limit' });
-scalarFields.set('blocks.master.config.p21.special_gas_limit', { type: 'string', path: 'doc.master.config.p21.special_gas_limit' });
-scalarFields.set('blocks.master.config.p21.gas_credit', { type: 'string', path: 'doc.master.config.p21.gas_credit' });
-scalarFields.set('blocks.master.config.p21.block_gas_limit', { type: 'string', path: 'doc.master.config.p21.block_gas_limit' });
-scalarFields.set('blocks.master.config.p21.freeze_due_limit', { type: 'string', path: 'doc.master.config.p21.freeze_due_limit' });
-scalarFields.set('blocks.master.config.p21.delete_due_limit', { type: 'string', path: 'doc.master.config.p21.delete_due_limit' });
-scalarFields.set('blocks.master.config.p21.flat_gas_limit', { type: 'string', path: 'doc.master.config.p21.flat_gas_limit' });
-scalarFields.set('blocks.master.config.p21.flat_gas_price', { type: 'string', path: 'doc.master.config.p21.flat_gas_price' });
+scalarFields.set('blocks.master.config.p18.bit_price_ps', { type: 'uint64', path: 'doc.master.config.p18[*].bit_price_ps' });
+scalarFields.set('blocks.master.config.p18.cell_price_ps', { type: 'uint64', path: 'doc.master.config.p18[*].cell_price_ps' });
+scalarFields.set('blocks.master.config.p18.mc_bit_price_ps', { type: 'uint64', path: 'doc.master.config.p18[*].mc_bit_price_ps' });
+scalarFields.set('blocks.master.config.p18.mc_cell_price_ps', { type: 'uint64', path: 'doc.master.config.p18[*].mc_cell_price_ps' });
+scalarFields.set('blocks.master.config.p20.gas_price', { type: 'uint64', path: 'doc.master.config.p20.gas_price' });
+scalarFields.set('blocks.master.config.p20.gas_limit', { type: 'uint64', path: 'doc.master.config.p20.gas_limit' });
+scalarFields.set('blocks.master.config.p20.special_gas_limit', { type: 'uint64', path: 'doc.master.config.p20.special_gas_limit' });
+scalarFields.set('blocks.master.config.p20.gas_credit', { type: 'uint64', path: 'doc.master.config.p20.gas_credit' });
+scalarFields.set('blocks.master.config.p20.block_gas_limit', { type: 'uint64', path: 'doc.master.config.p20.block_gas_limit' });
+scalarFields.set('blocks.master.config.p20.freeze_due_limit', { type: 'uint64', path: 'doc.master.config.p20.freeze_due_limit' });
+scalarFields.set('blocks.master.config.p20.delete_due_limit', { type: 'uint64', path: 'doc.master.config.p20.delete_due_limit' });
+scalarFields.set('blocks.master.config.p20.flat_gas_limit', { type: 'uint64', path: 'doc.master.config.p20.flat_gas_limit' });
+scalarFields.set('blocks.master.config.p20.flat_gas_price', { type: 'uint64', path: 'doc.master.config.p20.flat_gas_price' });
+scalarFields.set('blocks.master.config.p21.gas_price', { type: 'uint64', path: 'doc.master.config.p21.gas_price' });
+scalarFields.set('blocks.master.config.p21.gas_limit', { type: 'uint64', path: 'doc.master.config.p21.gas_limit' });
+scalarFields.set('blocks.master.config.p21.special_gas_limit', { type: 'uint64', path: 'doc.master.config.p21.special_gas_limit' });
+scalarFields.set('blocks.master.config.p21.gas_credit', { type: 'uint64', path: 'doc.master.config.p21.gas_credit' });
+scalarFields.set('blocks.master.config.p21.block_gas_limit', { type: 'uint64', path: 'doc.master.config.p21.block_gas_limit' });
+scalarFields.set('blocks.master.config.p21.freeze_due_limit', { type: 'uint64', path: 'doc.master.config.p21.freeze_due_limit' });
+scalarFields.set('blocks.master.config.p21.delete_due_limit', { type: 'uint64', path: 'doc.master.config.p21.delete_due_limit' });
+scalarFields.set('blocks.master.config.p21.flat_gas_limit', { type: 'uint64', path: 'doc.master.config.p21.flat_gas_limit' });
+scalarFields.set('blocks.master.config.p21.flat_gas_price', { type: 'uint64', path: 'doc.master.config.p21.flat_gas_price' });
 scalarFields.set('blocks.master.config.p22.bytes.underload', { type: 'number', path: 'doc.master.config.p22.bytes.underload' });
 scalarFields.set('blocks.master.config.p22.bytes.soft_limit', { type: 'number', path: 'doc.master.config.p22.bytes.soft_limit' });
 scalarFields.set('blocks.master.config.p22.bytes.hard_limit', { type: 'number', path: 'doc.master.config.p22.bytes.hard_limit' });
@@ -1227,15 +1294,15 @@ scalarFields.set('blocks.master.config.p23.gas.hard_limit', { type: 'number', pa
 scalarFields.set('blocks.master.config.p23.lt_delta.underload', { type: 'number', path: 'doc.master.config.p23.lt_delta.underload' });
 scalarFields.set('blocks.master.config.p23.lt_delta.soft_limit', { type: 'number', path: 'doc.master.config.p23.lt_delta.soft_limit' });
 scalarFields.set('blocks.master.config.p23.lt_delta.hard_limit', { type: 'number', path: 'doc.master.config.p23.lt_delta.hard_limit' });
-scalarFields.set('blocks.master.config.p24.lump_price', { type: 'string', path: 'doc.master.config.p24.lump_price' });
-scalarFields.set('blocks.master.config.p24.bit_price', { type: 'string', path: 'doc.master.config.p24.bit_price' });
-scalarFields.set('blocks.master.config.p24.cell_price', { type: 'string', path: 'doc.master.config.p24.cell_price' });
+scalarFields.set('blocks.master.config.p24.lump_price', { type: 'uint64', path: 'doc.master.config.p24.lump_price' });
+scalarFields.set('blocks.master.config.p24.bit_price', { type: 'uint64', path: 'doc.master.config.p24.bit_price' });
+scalarFields.set('blocks.master.config.p24.cell_price', { type: 'uint64', path: 'doc.master.config.p24.cell_price' });
 scalarFields.set('blocks.master.config.p24.ihr_price_factor', { type: 'number', path: 'doc.master.config.p24.ihr_price_factor' });
 scalarFields.set('blocks.master.config.p24.first_frac', { type: 'number', path: 'doc.master.config.p24.first_frac' });
 scalarFields.set('blocks.master.config.p24.next_frac', { type: 'number', path: 'doc.master.config.p24.next_frac' });
-scalarFields.set('blocks.master.config.p25.lump_price', { type: 'string', path: 'doc.master.config.p25.lump_price' });
-scalarFields.set('blocks.master.config.p25.bit_price', { type: 'string', path: 'doc.master.config.p25.bit_price' });
-scalarFields.set('blocks.master.config.p25.cell_price', { type: 'string', path: 'doc.master.config.p25.cell_price' });
+scalarFields.set('blocks.master.config.p25.lump_price', { type: 'uint64', path: 'doc.master.config.p25.lump_price' });
+scalarFields.set('blocks.master.config.p25.bit_price', { type: 'uint64', path: 'doc.master.config.p25.bit_price' });
+scalarFields.set('blocks.master.config.p25.cell_price', { type: 'uint64', path: 'doc.master.config.p25.cell_price' });
 scalarFields.set('blocks.master.config.p25.ihr_price_factor', { type: 'number', path: 'doc.master.config.p25.ihr_price_factor' });
 scalarFields.set('blocks.master.config.p25.first_frac', { type: 'number', path: 'doc.master.config.p25.first_frac' });
 scalarFields.set('blocks.master.config.p25.next_frac', { type: 'number', path: 'doc.master.config.p25.next_frac' });
@@ -1302,6 +1369,8 @@ scalarFields.set('blocks.master.config.p39.seqno', { type: 'number', path: 'doc.
 scalarFields.set('blocks.master.config.p39.valid_until', { type: 'number', path: 'doc.master.config.p39[*].valid_until' });
 scalarFields.set('blocks.master.config.p39.signature_r', { type: 'string', path: 'doc.master.config.p39[*].signature_r' });
 scalarFields.set('blocks.master.config.p39.signature_s', { type: 'string', path: 'doc.master.config.p39[*].signature_s' });
+scalarFields.set('blocks.key_block', { type: 'boolean', path: 'doc.key_block' });
+scalarFields.set('blocks.boc', { type: 'string', path: 'doc.boc' });
 scalarFields.set('transactions.id', { type: 'string', path: 'doc._key' });
 scalarFields.set('transactions.block_id', { type: 'string', path: 'doc.block_id' });
 scalarFields.set('transactions.account_addr', { type: 'string', path: 'doc.account_addr' });

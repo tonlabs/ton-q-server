@@ -209,7 +209,7 @@ const Message: TypeDef = {
     value_other: otherCurrencyCollection(docs.message.value_other),
     proof: string(docs.message.proof),
     boc: string(docs.message.boc),
-    src_transaction: join('Transaction', 'id', 'out_msgs[*]', 'parent.msg_type !== 1'),
+    src_transaction: join('Transaction', 'id', 'out_msgs[*]', 'parent.created_lt !== \'00\' && parent.msg_type !== 1'),
     dst_transaction: join('Transaction', 'id', 'in_msg', 'parent.msg_type !== 2'),
 };
 
@@ -403,15 +403,15 @@ const shardDescr = (doc?: string): TypeDef => withDoc({
 }, doc);
 
 const GasLimitsPrices: TypeDef = {
-    gas_price: string(),
-    gas_limit: string(),
-    special_gas_limit: string(),
-    gas_credit: string(),
-    block_gas_limit: string(),
-    freeze_due_limit: string(),
-    delete_due_limit: string(),
-    flat_gas_limit: string(),
-    flat_gas_price: string(),
+    gas_price: u64(),
+    gas_limit: u64(),
+    special_gas_limit: u64(),
+    gas_credit: u64(),
+    block_gas_limit: u64(),
+    freeze_due_limit: u64(),
+    delete_due_limit: u64(),
+    flat_gas_limit: u64(),
+    flat_gas_price: u64(),
 };
 
 const gasLimitsPrices = (doc?: string) => ref({ GasLimitsPrices }, doc);
@@ -437,9 +437,9 @@ const BlockLimits: TypeDef = {
 const blockLimits = (doc?: string) => ref({ BlockLimits }, doc);
 
 const MsgForwardPrices: TypeDef = {
-    lump_price: string(),
-    bit_price: string(),
-    cell_price: string(),
+    lump_price: u64(),
+    bit_price: u64(),
+    cell_price: u64(),
     ihr_price_factor: u32(),
     first_frac: u16(),
     next_frac: u16(),
@@ -620,8 +620,8 @@ const Block: TypeDef = {
             }, docs.block.master.config.p12._doc),
             p14: {
                 _doc: docs.block.master.config.p14._doc,
-                masterchain_block_fee: string(),
-                basechain_block_fee: string(),
+                masterchain_block_fee: grams(),
+                basechain_block_fee: grams(),
             },
             p15: {
                 _doc: docs.block.master.config.p15._doc,
@@ -645,10 +645,10 @@ const Block: TypeDef = {
             },
             p18: arrayOf({
                 utime_since: unixTime(),
-                bit_price_ps: string(),
-                cell_price_ps: string(),
-                mc_bit_price_ps: string(),
-                mc_cell_price_ps: string(),
+                bit_price_ps: u64(),
+                cell_price_ps: u64(),
+                mc_bit_price_ps: u64(),
+                mc_cell_price_ps: u64(),
             }, docs.block.master.config.p18._doc),
             p20: gasLimitsPrices(docs.block.master.config.p20),
             p21: gasLimitsPrices(docs.block.master.config.p21),
@@ -693,6 +693,8 @@ const Block: TypeDef = {
             }, docs.block.master.config.p39._doc),
         }
     },
+    key_block: bool(docs.block.key_block),
+    boc: string(docs.block.boc),
     signatures: join({ BlockSignatures }, 'id', 'id'),
 };
 

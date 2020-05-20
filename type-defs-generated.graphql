@@ -416,8 +416,8 @@ type BlockMasterConfigP12 {
 
 "Block create fees"
 type BlockMasterConfigP14 {
-	masterchain_block_fee: String
-	basechain_block_fee: String
+	masterchain_block_fee(format: BigIntFormat): String
+	basechain_block_fee(format: BigIntFormat): String
 }
 
 "Election parameters"
@@ -446,22 +446,22 @@ type BlockMasterConfigP17 {
 type BlockMasterConfigP18 {
 	utime_since: Float
 	utime_since_string: String
-	bit_price_ps: String
-	cell_price_ps: String
-	mc_bit_price_ps: String
-	mc_cell_price_ps: String
+	bit_price_ps(format: BigIntFormat): String
+	cell_price_ps(format: BigIntFormat): String
+	mc_bit_price_ps(format: BigIntFormat): String
+	mc_cell_price_ps(format: BigIntFormat): String
 }
 
 type GasLimitsPrices {
-	gas_price: String
-	gas_limit: String
-	special_gas_limit: String
-	gas_credit: String
-	block_gas_limit: String
-	freeze_due_limit: String
-	delete_due_limit: String
-	flat_gas_limit: String
-	flat_gas_price: String
+	gas_price(format: BigIntFormat): String
+	gas_limit(format: BigIntFormat): String
+	special_gas_limit(format: BigIntFormat): String
+	gas_credit(format: BigIntFormat): String
+	block_gas_limit(format: BigIntFormat): String
+	freeze_due_limit(format: BigIntFormat): String
+	delete_due_limit(format: BigIntFormat): String
+	flat_gas_limit(format: BigIntFormat): String
+	flat_gas_price(format: BigIntFormat): String
 }
 
 type BlockLimitsBytes {
@@ -489,9 +489,9 @@ type BlockLimits {
 }
 
 type MsgForwardPrices {
-	lump_price: String
-	bit_price: String
-	cell_price: String
+	lump_price(format: BigIntFormat): String
+	bit_price(format: BigIntFormat): String
+	cell_price(format: BigIntFormat): String
 	ihr_price_factor: Float
 	first_frac: Int
 	next_frac: Int
@@ -716,6 +716,10 @@ type Block {
 	tr_count: Int
 	state_update: BlockStateUpdate
 	master: BlockMaster
+	"true if this block is a key block"
+	key_block: Boolean
+	"Serialized bag of cell of this block encoded with base64"
+	boc: String
 	signatures(timeout: Int): BlockSignatures
 }
 
@@ -1846,6 +1850,10 @@ input BlockFilter {
 	tr_count: IntFilter
 	state_update: BlockStateUpdateFilter
 	master: BlockMasterFilter
+	"true if this block is a key block"
+	key_block: BooleanFilter
+	"Serialized bag of cell of this block encoded with base64"
+	boc: StringFilter
 	signatures: BlockSignaturesFilter
     OR: BlockFilter
 }

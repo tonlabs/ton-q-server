@@ -4,10 +4,16 @@ input Request {
     id: String
     "Serialized message in base64"
     body: String
+    "Message expiration time (unix time in ms)"
+    expireAt: Float
 }
 
+" GraphQL Server info"
 type Info {
+    " Server version "
     version: String
+    " Server unix time in ms"
+    time: Float
 }
 
 "Aggregation function used to collect aggregated value"

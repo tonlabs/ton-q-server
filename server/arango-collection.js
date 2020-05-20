@@ -33,7 +33,7 @@ import QLogs from "./logs";
 import { isFastQuery } from './slow-detector';
 import type { IStats } from './tracer';
 import { QTracer, StatsCounter, StatsGauge, StatsTiming } from "./tracer";
-import { createError, wrap } from "./utils";
+import { QError, wrap } from "./utils";
 import EventEmitter from 'events';
 
 const INFO_REFRESH_INTERVAL = 60 * 60 * 1000; // 60 minutes
@@ -71,10 +71,7 @@ function checkUsedAccessKey(
     }
     if (usedAccessKey && accessKey !== usedAccessKey) {
         context.multipleAccessKeysDetected = true;
-        throw createError(
-            400,
-            'Request must use the same access key for all queries and mutations',
-        );
+        throw QError.multipleAccessKeys();
     }
     return accessKey;
 }
@@ -596,6 +593,7 @@ export class Collection {
         if (!sameIndexes(indexes, this.info.indexes)) {
             this.log.debug('RELOAD_INDEXES', indexes);
             this.info.indexes = indexes;
+            this.queryStats.clear();
         }
 
     }

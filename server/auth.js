@@ -2,7 +2,7 @@
 
 import type { QConfig } from "./config";
 import fetch from 'node-fetch';
-import { createError } from "./utils";
+import { QError } from "./utils";
 
 export type AccessKey = {
     key: string,
@@ -37,12 +37,12 @@ export class Auth {
     }
 
     static unauthorizedError(): Error {
-        return createError(401, 'Unauthorized');
+        return QError.unauthorized();
     }
 
     authServiceRequired() {
         if (!this.config.authorization.endpoint) {
-            throw createError(500, 'Auth service unavailable');
+            throw QError.authServiceUnavailable();
         }
     }
 
@@ -121,11 +121,7 @@ export class Auth {
 
         const response = await res.json();
         if (response.error) {
-            throw createError(
-                response.error.code || 500,
-                response.error.message || response.error.description,
-                response.error.source || 'graphql',
-            );
+            throw QError.auth(response.error);
         }
 
         return response.result;
