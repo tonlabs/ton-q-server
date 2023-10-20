@@ -3,6 +3,7 @@ import fs from "fs"
 import path from "path"
 import { createHash } from "crypto"
 import { $$asyncIterator } from "iterall"
+import { ValidationError } from "apollo-server-express"
 
 export function packageJson(): Record<string, unknown> {
     let testPath = path.resolve(__dirname)
@@ -95,7 +96,7 @@ export class QError extends Error {
     }
 
     static invalidQuery(message: string) {
-        return QError.create(QErrorCode.INVALID_QUERY, message)
+        return new ValidationError(message)
     }
 }
 
@@ -325,7 +326,7 @@ export class QAsyncIterator<T> implements AsyncIterator<T> {
         private upstream: AsyncIterator<T>,
         private onNext?: (next: T) => void | Promise<void>,
         private onClose?: () => void,
-    ) {}
+    ) { }
 
     public async next() {
         if (this.isClosed) {
