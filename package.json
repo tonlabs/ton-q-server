@@ -46,7 +46,7 @@
         "arangochair": "git+https://github.com/tonlabs/arangochair.git",
         "arangojs": "6.14.1",
         "commander": "6.0.0",
-        "express": "4.17.1",
+        "express": "4.19.2",
         "graphql": "15.7.2",
         "graphql-redis-subscriptions": "^2.4.2",
         "graphql-subscriptions": "^2.0.0",
